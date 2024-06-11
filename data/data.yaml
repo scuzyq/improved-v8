@@ -1,0 +1,11 @@
+# dataset path
+path:/content/improved-v8/
+train: ./data/images/train
+val: ./data/images/val
+test: ./data/images/test
+
+# number of classes
+nc: 5
+
+# class names
+names: ['D00','D10','D20','D40','Repair']
