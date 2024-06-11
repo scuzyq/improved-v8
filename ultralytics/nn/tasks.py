@@ -21,6 +21,9 @@ from ultralytics.utils.torch_utils import (fuse_conv_and_bn, fuse_deconv_and_bn,
 from ultralytics.nn.modules.att import EMA, SimAM, ImprovedSimAM, SEAttention, CBAMBlock, LSKblock, ShuffleAttention, EfficientAttention, NAMAttention
 
 from ultralytics.nn.head.head_improve import Detect_improve
+
+from ultralytics.nn.DEANet import CGAFusion
+
 try:
     import thop
 except ImportError:
@@ -709,6 +712,9 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [ch[f]]
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
+        elif m is CGAFusion:
+            c2 = ch[f[1]]
+            args = [c2, *args]
         elif m in (Detect, Detect_improve, Segment, Pose):
             args.append([ch[x] for x in f])
             if m is Segment:
