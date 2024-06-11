@@ -18,7 +18,7 @@ from ultralytics.utils.plotting import feature_visualization
 from ultralytics.utils.torch_utils import (fuse_conv_and_bn, fuse_deconv_and_bn, initialize_weights, intersect_dicts,
                                            make_divisible, model_info, scale_img, time_sync)
 
-from ultralytics.nn.modules.att import EMA, SimAM, ImprovedSimAM, SEAttention, CBAMBlock, LSKblock, ShuffleAttention, EfficientAttention
+from ultralytics.nn.modules.att import EMA, SimAM, ImprovedSimAM, SEAttention, CBAMBlock, LSKblock, ShuffleAttention, EfficientAttention, NAMAttention
 
 try:
     import thop
@@ -685,7 +685,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
 
         n = n_ = max(round(n * depth), 1) if n > 1 else n  # depth gain
         if m in (Classify, Conv, ConvTranspose, GhostConv, Bottleneck, GhostBottleneck, SPP, SPPF, DWConv, Focus,
-                 BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, nn.ConvTranspose2d, DWConvTranspose2d, C3x, RepC3, C2f_Att, C2f_DCN):
+                 BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, nn.ConvTranspose2d, DWConvTranspose2d, C3x, RepC3, C2f_Att, C2f_DCN, NAMAttention):
             c1, c2 = ch[f], args[0]
             if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
                 c2 = make_divisible(min(c2, max_channels) * width, 8)
