@@ -603,7 +603,7 @@ class PSA(nn.Module):
         b = b + self.ffn(b)
         return self.cv2(torch.cat((a, b), 1))
 
-  class SCDown(nn.Module):
+class SCDown(nn.Module):
     def __init__(self, c1, c2, k, s):
         super().__init__()
         self.cv1 = Conv(c1, c2, 1, 1)
