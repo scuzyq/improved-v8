@@ -26,6 +26,8 @@ from ultralytics.nn.DEANet import CGAFusion
 
 from ultralytics.nn.yolov10 import PSA
 
+from ultralytics.nn.att.attention import *
+
 try:
     import thop
 except ImportError:
@@ -726,6 +728,14 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         elif m in (EMA, CBAMBlock, SEAttention, LSKblock, ShuffleAttention, EfficientAttention):
             c2 = ch[f]
             args = [c2, *args]
+        elif m in (TripletAttention,):
+            c1, c2 = ch[f], args[0]
+            if c2 != nc:
+                c2 = make_divisible(min(c2, max_channels) * width, 8)
+            args = [c1, *args[1:]]
+
+
+      
         else:
             c2 = ch[f]
 
