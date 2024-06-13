@@ -26,7 +26,7 @@ from ultralytics.nn.DEANet import CGAFusion
 
 from ultralytics.nn.yolov10 import PSA
 
-from ultralytics.nn.att.attention import *
+from ultralytics.nn.modules.att import *
 
 try:
     import thop
