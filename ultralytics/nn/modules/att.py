@@ -716,7 +716,7 @@ import torch
 from torch import nn
 import math
  
-__all__ = ['MCALayer', 'MCAGate']
+# __all__ = ['MCALayer', 'MCAGate']
  
  
 class StdPool(nn.Module):
