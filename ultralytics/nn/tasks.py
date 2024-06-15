@@ -32,6 +32,9 @@ from ultralytics.nn.modules.mobilenetv4block import C2f_UIB
 
 from ultralytics.nn.rfb import  BasicRFB
 
+from ultralytics.nn.modules.att.MCA import MCALayer
+
+
 try:
     import thop
 except ImportError:
@@ -697,7 +700,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
 
         n = n_ = max(round(n * depth), 1) if n > 1 else n  # depth gain
         if m in (Classify, Conv, ConvTranspose, GhostConv, Bottleneck, GhostBottleneck, SPP, SPPF, DWConv, Focus,
-                 BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, nn.ConvTranspose2d, DWConvTranspose2d, C3x, RepC3, C2f_Att, C2f_DCN, NAMAttention, PSA, C2f_UIB, BasicRFB):
+                 BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, nn.ConvTranspose2d, DWConvTranspose2d, C3x, RepC3, C2f_Att, C2f_DCN, NAMAttention, PSA, C2f_UIB, BasicRFB, MCALayer):
             c1, c2 = ch[f], args[0]
             if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
                 c2 = make_divisible(min(c2, max_channels) * width, 8)
