@@ -28,7 +28,7 @@ from ultralytics.nn.yolov10 import PSA
 
 from ultralytics.nn.modules.att import *
 
-from ultralytics.nn.mobilenetv4block import C2f_UIB
+from ultralytics.nn.modules.mobilenetv4block import C2f_UIB
 
 from ultralytics.nn.rfb import  BasicRFB
 
