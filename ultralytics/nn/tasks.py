@@ -20,7 +20,7 @@ from ultralytics.utils.torch_utils import (fuse_conv_and_bn, fuse_deconv_and_bn,
 
 from ultralytics.nn.modules.att import EMA, SimAM, ImprovedSimAM, SEAttention, CBAMBlock, LSKblock, ShuffleAttention, EfficientAttention, NAMAttention
 
-from ultralytics.nn.head_improve import Detect_improve
+from ultralytics.nn.modules.head_improve import Detect_improve
 
 from ultralytics.nn.DEANet import CGAFusion
 
