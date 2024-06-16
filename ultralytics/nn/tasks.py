@@ -32,7 +32,7 @@ from ultralytics.nn.modules.mobilenetv4block import C2f_UIB
 
 from ultralytics.nn.rfb import  BasicRFB
 
-from ultralytics.nn.modules.att.MCA import MCALayer
+from ultralytics.nn.modules.att import MCALayer
 
 from ultralytics.nn.neck.GFPN import CSPStage
 
