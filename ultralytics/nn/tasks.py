@@ -51,6 +51,8 @@ from ultralytics.nn.modules.conv import C2f_DySnakeConv
 
 from ultralytics.nn.RepNCSPELAN4 import  *
 
+from ultralytics.nn.RCSOSA  import  *
+
 try:
     import thop
 except ImportError:
@@ -716,7 +718,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
 
         n = n_ = max(round(n * depth), 1) if n > 1 else n  # depth gain
         if m in (Classify, Conv, ConvTranspose, GhostConv, Bottleneck, GhostBottleneck, SPP, SPPF, DWConv, Focus,
-                 BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, nn.ConvTranspose2d, DWConvTranspose2d, C3x, RepC3, C2f_Att, C2f_DCN, NAMAttention, PSA, C2f_UIB, BasicRFB, MCALayer, CSPStage, C2f_deformable_LKA, SKAttention, C2f_DySnakeConv,EMA_attention, SCDown, C2f_MSBlock, RepNCSPELAN4_low, RepNCSPELAN4_high):
+                 BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, nn.ConvTranspose2d, DWConvTranspose2d, C3x, RepC3, C2f_Att, C2f_DCN, NAMAttention, PSA, C2f_UIB, BasicRFB, MCALayer, CSPStage, C2f_deformable_LKA, SKAttention, C2f_DySnakeConv,EMA_attention, SCDown, C2f_MSBlock, RepNCSPELAN4_low, RepNCSPELAN4_high, RCSOSA):
             c1, c2 = ch[f], args[0]
             if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
                 c2 = make_divisible(min(c2, max_channels) * width, 8)
