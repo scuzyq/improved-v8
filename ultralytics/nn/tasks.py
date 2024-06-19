@@ -24,6 +24,9 @@ from ultralytics.nn.modules.head_improve import Detect_improve
 
 from ultralytics.nn.modules.AFPN import Detect_AFPN
 
+from ultralytics.nn.modules.ASFFHead import Detect_ASFF
+
+
 from ultralytics.nn.DEANet import CGAFusion
 
 from ultralytics.nn.modules.conv import EMA_attention
@@ -31,6 +34,8 @@ from ultralytics.nn.modules.conv import EMA_attention
 from ultralytics.nn.modules.conv import SCDown
 
 from ultralytics.nn.modules.conv import C2f_MSBlock
+
+
 
 
 from ultralytics.nn.yolov10 import PSA
@@ -214,7 +219,7 @@ class BaseModel(nn.Module):
         """
         self = super()._apply(fn)
         m = self.model[-1]  # Detect()
-        if isinstance(m, (Detect, Detect_improve, Detect_AFPN, Segment)):
+        if isinstance(m, (Detect, Detect_improve, Detect_AFPN, Detect_ASFF, Segment)):
             m.stride = fn(m.stride)
             m.anchors = fn(m.anchors)
             m.strides = fn(m.strides)
@@ -273,7 +278,7 @@ class DetectionModel(BaseModel):
 
         # Build strides
         m = self.model[-1]  # Detect()
-        if isinstance(m, (Detect, Detect_improve, Detect_AFPN, Segment, Pose)):
+        if isinstance(m, (Detect, Detect_improve, Detect_AFPN, Detect_ASFF, Segment, Pose)):
             s = 256  # 2x min stride
             m.inplace = self.inplace
             forward = lambda x: self.forward(x)[0] if isinstance(m, (Segment, Pose)) else self.forward(x)
@@ -643,7 +648,7 @@ def attempt_load_weights(weights, device=None, inplace=True, fuse=False):
     # Module updates
     for m in ensemble.modules():
         t = type(m)
-        if t in (nn.Hardswish, nn.LeakyReLU, nn.ReLU, nn.ReLU6, nn.SiLU, Detect, Detect_improve, Detect_AFPN, Segment):
+        if t in (nn.Hardswish, nn.LeakyReLU, nn.ReLU, nn.ReLU6, nn.SiLU, Detect, Detect_improve, Detect_AFPN, Detect_ASFF, Segment):
             m.inplace = inplace
         elif t is nn.Upsample and not hasattr(m, 'recompute_scale_factor'):
             m.recompute_scale_factor = None  # torch 1.11.0 compatibility
@@ -679,7 +684,7 @@ def attempt_load_one_weight(weight, device=None, inplace=True, fuse=False):
     # Module updates
     for m in model.modules():
         t = type(m)
-        if t in (nn.Hardswish, nn.LeakyReLU, nn.ReLU, nn.ReLU6, nn.SiLU, Detect, Detect_improve, Detect_AFPN, Segment):
+        if t in (nn.Hardswish, nn.LeakyReLU, nn.ReLU, nn.ReLU6, nn.SiLU, Detect, Detect_improve, Detect_AFPN, Detect_ASFF, Segment):
             m.inplace = inplace
         elif t is nn.Upsample and not hasattr(m, 'recompute_scale_factor'):
             m.recompute_scale_factor = None  # torch 1.11.0 compatibility
@@ -747,7 +752,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         elif m is CGAFusion:
             c2 = ch[f[1]]
             args = [c2, *args]
-        elif m in (Detect, Detect_improve, Detect_AFPN,Segment, Pose):
+        elif m in (Detect, Detect_improve, Detect_AFPN, Detect_ASFF, Segment, Pose):
             args.append([ch[x] for x in f])
             if m is Segment:
                 args[2] = make_divisible(min(args[2], max_channels) * width, 8)
@@ -859,7 +864,7 @@ def guess_model_task(model):
                 return cfg2task(eval(x))
 
         for m in model.modules():
-            if isinstance(m, (Detect, Detect_improve, Detect_AFPN)):
+            if isinstance(m, (Detect, Detect_improve, Detect_AFPN, Detect_ASFF)):
                 return 'detect'
             elif isinstance(m, Segment):
                 return 'segment'
