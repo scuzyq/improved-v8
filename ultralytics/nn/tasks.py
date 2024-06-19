@@ -49,7 +49,7 @@ from ultralytics.nn.modules.att import C2f_deformable_LKA
 
 from ultralytics.nn.modules.conv import C2f_DySnakeConv
 
-from .modules import *
+from ultralytics.nn.RepNCSPELAN4 import  *
 
 try:
     import thop
