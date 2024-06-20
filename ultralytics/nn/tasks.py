@@ -26,6 +26,9 @@ from ultralytics.nn.modules.AFPN import Detect_AFPN
 
 from ultralytics.nn.modules.ASFFHead import Detect_ASFF
 
+from ultralytics.nn.modules.FRMHead import Detect_FRM
+
+
 
 from ultralytics.nn.DEANet import CGAFusion
 
