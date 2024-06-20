@@ -30,7 +30,7 @@ from ultralytics.nn.modules.FRMHead import Detect_FRM
 
 from ultralytics.nn.modules.AsDDet import AsDDet
 
-
+from ultralytics.nn.modules.DynamicHead import DynamicHead
 
 from ultralytics.nn.DEANet import CGAFusion
 
