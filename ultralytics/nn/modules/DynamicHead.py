@@ -13,7 +13,7 @@ from ultralytics.utils.tal import TORCH_1_10, dist2bbox, dist2rbox, make_anchors
 
 from ultralytics.nn.modules.block import DFL, Proto
 from ultralytics.nn.modules.conv import Conv
-from ultralytics.nn.modules.CoreV8.Impove.DynamicHead import DyHeadBlock
+from ultralytics.nn.modules.DynamicHead import DyHeadBlock
 
 class REGS(nn.Module):
     def __init__(self, x, c2):
