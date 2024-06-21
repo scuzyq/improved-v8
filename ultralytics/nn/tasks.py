@@ -49,7 +49,7 @@ from ultralytics.nn.modules.conv import SCDown
 from ultralytics.nn.modules.conv import C2f_MSBlock
 
 
-
+from ultralytics.nn.modules.LSKAttention import LSKA
 
 from ultralytics.nn.yolov10 import PSA
 
@@ -780,6 +780,8 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                 c2 = make_divisible(min(c2, max_channels) * width, 8)
             args = [c1, *args[1:]]
 
+        elif m in {LSKA}:
+            args = [ch[f], *args]
 
       
         else:
