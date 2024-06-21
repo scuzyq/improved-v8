@@ -22,7 +22,7 @@ from ultralytics.nn.modules.att import EMA, SimAM, ImprovedSimAM, SEAttention, C
 from ultralytics.nn.modules.head_improve import Detect_improve
 
 
-from ultralytics.nn.modules.ACmix import from ACmix
+from ultralytics.nn.modules.ACmix import ACmix
 
 from ultralytics.nn.modules.AFPN import Detect_AFPN
 
