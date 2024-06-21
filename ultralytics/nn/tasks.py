@@ -22,6 +22,8 @@ from ultralytics.nn.modules.att import EMA, SimAM, ImprovedSimAM, SEAttention, C
 from ultralytics.nn.modules.head_improve import Detect_improve
 
 
+from ultralytics.nn.modules.ACmix import from ACmix
+
 from ultralytics.nn.modules.AFPN import Detect_AFPN
 
 from ultralytics.nn.modules.ASFFHead import Detect_ASFF
@@ -783,6 +785,9 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         elif m in {LSKA}:
             args = [ch[f], *args]
 
+
+        elif m in {ACmix}:
+            args = [ch[f],  ch[f]]
       
         else:
             c2 = ch[f]
