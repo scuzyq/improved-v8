@@ -47,6 +47,9 @@ from ultralytics.nn.modules.AFPNHead3 import Detect_AFPN3
 
 from ultralytics.nn.modules.CLLAHead import CLLAHead
 
+from ultralytics.nn.modules.CLLAHead import CLLAHead
+
+
 from ultralytics.nn.DEANet import CGAFusion
 
 from ultralytics.nn.modules.conv import EMA_attention
