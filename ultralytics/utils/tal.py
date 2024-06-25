@@ -160,7 +160,7 @@ class TaskAlignedAssigner(nn.Module):
 
 
         overlaps[mask_gt] = bbox_iou(gt_boxes, pd_boxes, xywh=False, GIoU=False, DIoU=False, CIoU=False,
-                                     EIoU=False, SIoU=False, WIoU=True, ShapeIoU=False, Inner=False,
+                                     EIoU=False, SIoU=False, WIoU=True, ShapeIoU=True, Inner=False,
                                      ratio=0.7, eps=1e-7, scale=0.0).squeeze(-1).clamp_(0)
         
         align_metric = bbox_scores.pow(self.alpha) * overlaps.pow(self.beta)
