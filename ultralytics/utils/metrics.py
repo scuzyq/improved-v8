@@ -106,7 +106,7 @@ class WIoU_Scale:
                 return beta / alpha
         return 1
  
-def bbox_iou(box1, box2, xywh=True, GIoU=False, DIoU=False, CIoU=False, EIoU=False, SIoU=False, WIoU=False, ShapeIoU=False,
+def bbox_iou(box1, box2, xywh=True, GIoU=False, DIoU=False, CIoU=False, EIoU=False, SIoU=False, WIoU=False, ShapeIoU=True,
              hw=1, mpdiou=False, Inner=False, alpha=1, ratio=0.7, eps=1e-7, scale=0.0):
     """
     Calculate Intersection over Union (IoU) of box1(1, 4) to box2(n, 4).
