@@ -13,7 +13,7 @@ from .mamba_vss import *
 
 
 __all__ = ('DFL', 'HGBlock', 'HGStem', 'SPP', 'SPPF', 'C1', 'C2', 'C3', 'C2f', 'C3x', 'C3TR', 'C3Ghost',
-           'GhostBottleneck', 'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3', 'ResNetLayer', 'C2f_Att','C2f_VSS')
+           'GhostBottleneck', 'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3', 'ResNetLayer', 'C2f_Att','C2f_VSS','DyDCNv2')
 
 
 class DFL(nn.Module):
