@@ -4,9 +4,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.init import constant_, xavier_uniform_
 
-from .conv import Conv, DFL, C2f, RepConv
-from .conv import autopad
-from .block import DyDCNv2
+
+from .conv import autopad,Conv, RepConv
+from .block import DyDCNv2, DFL, C2f
 from ultralytics.utils.tal import dist2bbox, make_anchors, dist2rbox
 from ultralytics.utils.ops import nmsfree_postprocess
 
