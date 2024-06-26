@@ -63,6 +63,8 @@ from ultralytics.nn.modules.conv import SCDown
 from ultralytics.nn.modules.conv import C2f_MSBlock
 
 
+from ultralytics.nn.modules.FFANet import FFA
+
 from ultralytics.nn.modules.LSKAttention import LSKA
 
 from ultralytics.nn.yolov10 import PSA
@@ -785,7 +787,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                 args[2] = make_divisible(min(args[2], max_channels) * width, 8)
         elif m is RTDETRDecoder:  # special case, channels arg must be passed in index 1
             args.insert(1, [ch[x] for x in f])
-        elif m in (EMA, CBAMBlock, SEAttention, LSKblock, ShuffleAttention, EfficientAttention):
+        elif m in (EMA, CBAMBlock, SEAttention, LSKblock, ShuffleAttention, EfficientAttention, FFA):
             c2 = ch[f]
             args = [c2, *args]
         elif m in (TripletAttention,):
