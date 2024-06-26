@@ -13,7 +13,7 @@ from .mamba_vss import *
 
 
 __all__ = ('DFL', 'HGBlock', 'HGStem', 'SPP', 'SPPF', 'C1', 'C2', 'C3', 'C2f', 'C3x', 'C3TR', 'C3Ghost',
-           'GhostBottleneck', 'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3', 'ResNetLayer', 'C2f_Att','C2f_VSS','DyDCNv2')
+           'GhostBottleneck', 'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3', 'ResNetLayer', 'C2f_Att','C2f_VSS')
 
 
 class DFL(nn.Module):
@@ -621,38 +621,3 @@ class C2f_VSS(C2f):
     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):
         super().__init__(c1, c2, n, shortcut, g, e)
         self.m = nn.ModuleList(Bottleneck_VSS(self.c, self.c, shortcut, g, k=(3, 3), e=1.0) for _ in range(n))
-
-
-
-class DyDCNv2(nn.Module):
-    """ModulatedDeformConv2d with normalization layer used in DyHead.
-    This module cannot be configured with `conv_cfg=dict(type='DCNv2')`
-    because DyHead calculates offset and mask from middle-level feature.
-    Args:
-        in_channels (int): Number of input channels.
-        out_channels (int): Number of output channels.
-        stride (int | tuple[int], optional): Stride of the convolution.
-            Default: 1.
-        norm_cfg (dict, optional): Config dict for normalization layer.
-            Default: dict(type='GN', num_groups=16, requires_grad=True).
-    """
-
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 stride=1,
-                 norm_cfg=dict(type='GN', num_groups=16, requires_grad=True)):
-        super().__init__()
-        self.with_norm = norm_cfg is not None
-        bias = not self.with_norm
-        self.conv = ModulatedDeformConv2d(
-            in_channels, out_channels, 3, stride=stride, padding=1, bias=bias)
-        if self.with_norm:
-            self.norm = build_norm_layer(norm_cfg, out_channels)[1]
-
-    def forward(self, x, offset, mask):
-        """Forward function."""
-        x = self.conv(x.contiguous(), offset, mask)
-        if self.with_norm:
-            x = self.norm(x)
-        return x
