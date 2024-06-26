@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.init import constant_, xavier_uniform_
 
-from ..modules import Conv, DFL, C2f, RepConv, Proto, Detect, Segment, Pose, OBB, DSConv
+from .conv import Conv, DFL, C2f, RepConv
 from .conv import autopad
 from .block import DyDCNv2
 from ultralytics.utils.tal import dist2bbox, make_anchors, dist2rbox
