@@ -273,7 +273,8 @@ def get_flops(model, imgsz=640):
     try:
         model = de_parallel(model)
         p = next(model.parameters())
-        stride = max(int(model.stride.max()), 32) if hasattr(model, 'stride') else 32  # max stride
+        # stride = max(int(model.stride.max()), 32) if hasattr(model, 'stride') else 32  # max stride
+        stride=640
         im = torch.empty((1, p.shape[1], stride, stride), device=p.device)  # input image in BCHW format
         flops = thop.profile(deepcopy(model), inputs=[im], verbose=False)[0] / 1E9 * 2 if thop else 0  # stride GFLOPs
         imgsz = imgsz if isinstance(imgsz, list) else [imgsz, imgsz]  # expand if int/float
