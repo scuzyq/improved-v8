@@ -11,7 +11,39 @@
 import torch
 import torch.nn as nn
  
-__all__ = ['MLLAttention']
+__all__ = ['C2fMLLABlock']
+ 
+def drop_path(x, drop_prob: float = 0., training: bool = False, scale_by_keep: bool = True):
+    """Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks).
+    This is the same as the DropConnect impl I created for EfficientNet, etc networks, however,
+    the original name is misleading as 'Drop Connect' is a different form of dropout in a separate paper...
+    See discussion: https://github.com/tensorflow/tpu/issues/494#issuecomment-532968956 ... I've opted for
+    changing the layer and argument names to 'drop path' rather than mix DropConnect as a layer name and use
+    'survival rate' as the argument.
+    """
+    if drop_prob == 0. or not training:
+        return x
+    keep_prob = 1 - drop_prob
+    shape = (x.shape[0],) + (1,) * (x.ndim - 1)  # work with diff dim tensors, not just 2D ConvNets
+    random_tensor = x.new_empty(shape).bernoulli_(keep_prob)
+    if keep_prob > 0.0 and scale_by_keep:
+        random_tensor.div_(keep_prob)
+    return x * random_tensor
+ 
+ 
+class DropPath(nn.Module):
+    """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks).
+    """
+    def __init__(self, drop_prob: float = 0., scale_by_keep: bool = True):
+        super(DropPath, self).__init__()
+        self.drop_prob = drop_prob
+        self.scale_by_keep = scale_by_keep
+ 
+    def forward(self, x):
+        return drop_path(x, self.drop_prob, self.training, self.scale_by_keep)
+ 
+    def extra_repr(self):
+        return f'drop_prob={round(self.drop_prob,3):0.3f}'
  
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
@@ -103,7 +135,7 @@ class RoPE(torch.nn.Module):
         return torch.view_as_real(pe_x).flatten(-2)
  
  
-class MLLAttention(nn.Module):
+class LinearAttention(nn.Module):
     r""" Linear Attention with LePE and RoPE.
     Args:
         dim (int): Number of input channels.
@@ -111,11 +143,10 @@ class MLLAttention(nn.Module):
         qkv_bias (bool, optional):  If True, add a learnable bias to query, key, value. Default: True
     """
  
-    def __init__(self, dim=3, input_resolution=[160, 160], num_heads=4, qkv_bias=True, **kwargs):
+    def __init__(self, dim,  num_heads=4, qkv_bias=True, **kwargs):
  
         super().__init__()
         self.dim = dim
-        self.input_resolution = input_resolution
         self.num_heads = num_heads
         self.qk = nn.Linear(dim, dim * 2, bias=qkv_bias)
         self.elu = nn.ELU()
@@ -127,11 +158,9 @@ class MLLAttention(nn.Module):
         Args:
             x: input features with shape of (B, N, C)
         """
-        x = x.reshape((x.size(0), x.size(2) * x.size(3), x.size(1)))
         b, n, c = x.shape
         h = int(n ** 0.5)
         w = int(n ** 0.5)
-        # self.rope = RoPE(shape=(h, w, self.dim))
         num_heads = self.num_heads
         head_dim = c // num_heads
  
@@ -154,20 +183,132 @@ class MLLAttention(nn.Module):
         x = x.transpose(1, 2).reshape(b, n, c)
         v = v.transpose(1, 2).reshape(b, h, w, c).permute(0, 3, 1, 2)
         x = x + self.lepe(v).permute(0, 2, 3, 1).reshape(b, n, c)
-        x = x.transpose(2, 1).reshape((b, c, h, w))
+ 
         return x
  
     def extra_repr(self) -> str:
         return f'dim={self.dim}, num_heads={self.num_heads}'
  
  
+class MLLABlock(nn.Module):
+    r""" MLLA Block.
+    Args:
+        dim (int): Number of input channels.
+        input_resolution (tuple[int]): Input resulotion.
+        num_heads (int): Number of attention heads.
+        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim.
+        qkv_bias (bool, optional): If True, add a learnable bias to query, key, value. Default: True
+        drop (float, optional): Dropout rate. Default: 0.0
+        drop_path (float, optional): Stochastic depth rate. Default: 0.0
+        act_layer (nn.Module, optional): Activation layer. Default: nn.GELU
+        norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
+    """
+ 
+    def __init__(self, dim, num_heads=4, mlp_ratio=4., qkv_bias=True, drop=0., drop_path=0.,
+                 act_layer=nn.GELU, norm_layer=nn.LayerNorm, **kwargs):
+        super().__init__()
+        self.dim = dim
+        self.num_heads = num_heads
+        self.mlp_ratio = mlp_ratio
+ 
+        self.cpe1 = nn.Conv2d(dim, dim, 3, padding=1, groups=dim)
+        self.norm1 = norm_layer(dim)
+        self.in_proj = nn.Linear(dim, dim)
+        self.act_proj = nn.Linear(dim, dim)
+        self.dwc = nn.Conv2d(dim, dim, 3, padding=1, groups=dim)
+        self.act = nn.SiLU()
+        self.attn = LinearAttention(dim=dim, num_heads=num_heads, qkv_bias=qkv_bias)
+        self.out_proj = nn.Linear(dim, dim)
+        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+ 
+        self.cpe2 = nn.Conv2d(dim, dim, 3, padding=1, groups=dim)
+        self.norm2 = norm_layer(dim)
+        self.mlp = Mlp(in_features=dim, hidden_features=int(dim * mlp_ratio), act_layer=act_layer, drop=drop)
+ 
+    def forward(self, x):
+        x = x.reshape((x.size(0), x.size(2) * x.size(3), x.size(1)))
+        b, n, c = x.shape
+        H = int(n ** 0.5)
+        W = int(n ** 0.5)
+        B, L, C = x.shape
+        assert L == H * W, "input feature has wrong size"
+ 
+        x = x + self.cpe1(x.reshape(B, H, W, C).permute(0, 3, 1, 2)).flatten(2).permute(0, 2, 1)
+        shortcut = x
+ 
+        x = self.norm1(x)
+        act_res = self.act(self.act_proj(x))
+        x = self.in_proj(x).view(B, H, W, C)
+        x = self.act(self.dwc(x.permute(0, 3, 1, 2))).permute(0, 2, 3, 1).view(B, L, C)
+ 
+        # Linear Attention
+        x = self.attn(x)
+ 
+        x = self.out_proj(x * act_res)
+        x = shortcut + self.drop_path(x)
+        x = x + self.cpe2(x.reshape(B, H, W, C).permute(0, 3, 1, 2)).flatten(2).permute(0, 2, 1)
+ 
+        # FFN
+        x = x + self.drop_path(self.mlp(self.norm2(x)))
+        x = x.transpose(2, 1).reshape((b, c, H, W))
+        return x
+ 
+    def extra_repr(self) -> str:
+        return f"dim={self.dim}, input_resolution={self.input_resolution}, num_heads={self.num_heads}, " \
+               f"mlp_ratio={self.mlp_ratio}"
+ 
+ 
+def autopad(k, p=None, d=1):  # kernel, padding, dilation
+    """Pad to 'same' shape outputs."""
+    if d > 1:
+        k = d * (k - 1) + 1 if isinstance(k, int) else [d * (x - 1) + 1 for x in k]  # actual kernel-size
+    if p is None:
+        p = k // 2 if isinstance(k, int) else [x // 2 for x in k]  # auto-pad
+    return p
+ 
+ 
+ 
+class Conv(nn.Module):
+    """Standard convolution with args(ch_in, ch_out, kernel, stride, padding, groups, dilation, activation)."""
+    default_act = nn.SiLU()  # default activation
+ 
+    def __init__(self, c1, c2, k=1, s=1, p=None, g=1, d=1, act=True):
+        """Initialize Conv layer with given arguments including activation."""
+        super().__init__()
+        self.conv = nn.Conv2d(c1, c2, k, s, autopad(k, p, d), groups=g, dilation=d, bias=False)
+        self.bn = nn.BatchNorm2d(c2)
+        self.act = self.default_act if act is True else act if isinstance(act, nn.Module) else nn.Identity()
+ 
+    def forward(self, x):
+        """Apply convolution, batch normalization and activation to input tensor."""
+        return self.act(self.bn(self.conv(x)))
+ 
+    def forward_fuse(self, x):
+        """Perform transposed convolution of 2D data."""
+        return self.act(self.conv(x))
+ 
+ 
+class C2fMLLABlock(nn.Module):
+    # CSP Bottleneck with 2 convolutions
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
+        self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(MLLABlock(self.c) for _ in range(n))
+ 
+    def forward(self, x):
+        y = list(self.cv1(x).split((self.c, self.c), 1))
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(torch.cat(y, 1))
+ 
 if __name__ == "__main__":
     # Generating Sample image
-    image_size = (1, 64, 160, 160)
+    image_size = (1, 64, 224, 224)
     image = torch.rand(*image_size)
  
     # Model
-    model = MLLAttention(64)
+    model = C2fMLLABlock(64, 64, 3)
  
     out = model(image)
     print(out.size())
