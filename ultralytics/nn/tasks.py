@@ -84,6 +84,9 @@ from ultralytics.nn.modules.VanillaNet import *
 from ultralytics.nn.modules.FasterNet import FasterNet
 
 
+from ultralytics.nn.modules.MobileNetV3 import MobileNetV3
+
+
 from ultralytics.nn.modules.mobilenetv4block import C2f_UIB
 
 from ultralytics.nn.rfb import  BasicRFB
@@ -833,7 +836,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         elif m in {ACmix}:
             args = [ch[f],  ch[f]]
 
-        elif m in {vanillanet_5, vanillanet_6, vanillanet_7, vanillanet_8, vanillanet_9, vanillanet_10(), FasterNet}:
+        elif m in {vanillanet_5, vanillanet_6, vanillanet_7, vanillanet_8, vanillanet_9, vanillanet_10(), FasterNet, MobileNetV3}:
             m = m()
             c2 = m.width_list  # 返回通道列表
             backbone = True
