@@ -45,6 +45,9 @@ from ultralytics.nn.modules.MLLABlock import *
 from ultralytics.nn.modules.DCNv3LKA import * 
 
 
+from ultralytics.nn.modules.emo import * 
+
+
 from ultralytics.nn.modules.ImplicitHead import ImplicitHead
 
 from ultralytics.nn.modules.LADH import LADH
@@ -840,7 +843,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         elif m in {ACmix}:
             args = [ch[f],  ch[f]]
 
-        elif m in {vanillanet_5, vanillanet_6, vanillanet_7, vanillanet_8, vanillanet_9, vanillanet_10(), FasterNet, MobileNetV3}:
+        elif m in {vanillanet_5, vanillanet_6, vanillanet_7, vanillanet_8, vanillanet_9, vanillanet_10(), FasterNet, MobileNetV3, EMO_1M, EMO_2M, EMO_5M, EMO_6M}:
             m = m()
             c2 = m.width_list  # 返回通道列表
             backbone = True
