@@ -13,7 +13,7 @@ from .transformer import TransformerBlock
 
 
 __all__ = ('DFL', 'HGBlock', 'HGStem', 'SPP', 'SPPF', 'C1', 'C2', 'C3', 'C2f', 'C3x', 'C3TR', 'C3Ghost',
-           'GhostBottleneck', 'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3', 'ResNetLayer', 'C2f_Att','C2f_DCN2')
+           'GhostBottleneck', 'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3', 'ResNetLayer', 'C2f_Att','C2f_DCN2','BiFPN_Concat2')
 
 
 class DFL(nn.Module):
@@ -644,6 +644,21 @@ class C2f_DCN2(nn.Module):
         y = list(self.cv1(x).split((self.c, self.c), 1))
         y.extend(m(y[-1]) for m in self.m)
         return self.cv2(torch.cat(y, 1))
+
+
+class BiFPN_Concat2(nn.Module):
+    def __init__(self, dimension=1):
+        super(BiFPN_Concat2, self).__init__()
+        self.d = dimension
+        self.w = nn.Parameter(torch.ones(2, dtype=torch.float32), requires_grad=True)
+        self.epsilon = 0.0001
+
+    def forward(self, x):
+        w = self.w
+        weight = w / (torch.sum(w, dim=0) + self.epsilon)  # 将权重进行归一化
+        # Fast normalized fusion
+        x = [weight[0] * x[0], weight[1] * x[1]]
+        return torch.cat(x, self.d)
 
 
 # class C2f_VSS(C2f):
