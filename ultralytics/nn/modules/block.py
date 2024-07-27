@@ -691,6 +691,32 @@ class SPDConv(nn.Module):
         x = self.conv(x)
         return x
 
+class FGM(nn.Module):
+    def __init__(self, dim) -> None:
+        super().__init__()
+
+        self.conv = nn.Conv2d(dim, dim*2, 3, 1, 1, groups=dim)
+
+        self.dwconv1 = nn.Conv2d(dim, dim, 1, 1, groups=1)
+        self.dwconv2 = nn.Conv2d(dim, dim, 1, 1, groups=1)
+        self.alpha = nn.Parameter(torch.zeros(dim, 1, 1))
+        self.beta = nn.Parameter(torch.ones(dim, 1, 1))
+
+    def forward(self, x):
+        # res = x.clone()
+        fft_size = x.size()[2:]
+        x1 = self.dwconv1(x)
+        x2 = self.dwconv2(x)
+
+        x2_fft = torch.fft.fft2(x2, norm='backward')
+
+        out = x1 * x2_fft
+
+        out = torch.fft.ifft2(out, dim=(-2,-1), norm='backward')
+        out = torch.abs(out)
+
+        return out * self.alpha + x * self.beta
+
 
 class OmniKernel(nn.Module):
     def __init__(self, dim) -> None:
