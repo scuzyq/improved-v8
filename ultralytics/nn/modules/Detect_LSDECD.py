@@ -2,10 +2,62 @@ import math, copy
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from ultralytics.nn.modules.block import DFL, Proto
+from ultralytics.nn.modules.conv import autopad
+from ultralytics.nn.modules.deconv import DEConv
 from torch.nn.init import constant_, xavier_uniform_
 from ultralytics.utils.tal import dist2bbox, make_anchors, dist2rbox
 # from ultralytics.utils.ops import nmsfree_postprocess
 __all__ = ['Detect_LSDECD']
+
+
+class Conv_GN(nn.Module):
+    """Standard convolution with args(ch_in, ch_out, kernel, stride, padding, groups, dilation, activation)."""
+
+    default_act = nn.SiLU()  # default activation
+
+    def __init__(self, c1, c2, k=1, s=1, p=None, g=1, d=1, act=True):
+        """Initialize Conv layer with given arguments including activation."""
+        super().__init__()
+        self.conv = nn.Conv2d(c1, c2, k, s, autopad(k, p, d), groups=g, dilation=d, bias=False)
+        self.gn = nn.GroupNorm(16, c2)
+        self.act = self.default_act if act is True else act if isinstance(act, nn.Module) else nn.Identity()
+
+    def forward(self, x):
+        """Apply convolution, batch normalization and activation to input tensor."""
+        return self.act(self.gn(self.conv(x)))
+
+
+
+class DEConv_GN(DEConv):
+    """Standard convolution with args(ch_in, ch_out, kernel, stride, padding, groups, dilation, activation)."""
+
+    def __init__(self, dim):
+        super().__init__(dim)
+        
+        self.bn = nn.GroupNorm(16, dim)
+
+
+
+class Scale(nn.Module):
+    """A learnable scale parameter.
+
+    This layer scales the input by a learnable factor. It multiplies a
+    learnable scale parameter of shape (1,) with input of any shape.
+
+    Args:
+        scale (float): Initial value of scale factor. Default: 1.0
+    """
+
+    def __init__(self, scale: float = 1.0):
+        super().__init__()
+        self.scale = nn.Parameter(torch.tensor(scale, dtype=torch.float))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return x * self.scale
+
+
+
 class Detect_LSDECD(nn.Module):
     # Lightweight Shared Detail Enhanced Convolutional Detection Head
     """YOLOv8 Detect head for detection models."""
