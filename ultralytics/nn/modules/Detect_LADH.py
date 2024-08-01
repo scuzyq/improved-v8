@@ -8,7 +8,7 @@ from ultralytics.nn.modules.conv import DSConv
 from ultralytics.nn.modules.conv import autopad
 from ultralytics.utils.tal import dist2bbox, make_anchors, dist2rbox
 # from ultralytics.utils.ops import nmsfree_postprocess
-
+__all__ = ['Detect_LADH']
 class Detect_LADH(nn.Module):
     """YOLOv8 Detect head for detection models."""
 
