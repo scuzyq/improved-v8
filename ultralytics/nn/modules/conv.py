@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 
 __all__ = ('Conv', 'Conv2', 'LightConv', 'DWConv', 'DWConvTranspose2d', 'ConvTranspose', 'Focus', 'GhostConv',
-           'ChannelAttention', 'SpatialAttention', 'CBAM', 'Concat', 'RepConv','DySnakeConv','EMA_attention')
+           'ChannelAttention', 'SpatialAttention', 'CBAM', 'Concat', 'RepConv','DySnakeConv','EMA_attention','DSConv')
 
 
 def autopad(k, p=None, d=1):  # kernel, padding, dilation
@@ -872,3 +872,15 @@ class C2f_MSBlock(nn.Module):
         y = list(self.cv1(x).split((self.c, self.c), 1))
         y.extend(m(y[-1]) for m in self.m)
         return self.cv2(torch.cat(y, 1))
+
+
+class DSConv(nn.Module):
+    """Depthwise Separable Convolution"""
+    def __init__(self, c1, c2, k=1, s=1, d=1, act=True) -> None:
+        super().__init__()
+        
+        self.dwconv = DWConv(c1, c1, 3)
+        self.pwconv = Conv(c1, c2, 1)
+    
+    def forward(self, x):
+        return self.pwconv(self.dwconv(x))
