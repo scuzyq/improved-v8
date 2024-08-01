@@ -10,7 +10,7 @@ import torch.nn as nn
 from ultralytics.nn.modules import (AIFI, C1, C2, C3, C3TR, SPP, SPPF, Bottleneck, BottleneckCSP, C2f, C3Ghost, C3x,
                                     Classify, Concat, Conv, Conv2, ConvTranspose, Detect, DWConv, DWConvTranspose2d,
                                     Focus, GhostBottleneck, GhostConv, HGBlock, HGStem, Pose, RepC3, RepConv,
-                                    ResNetLayer, RTDETRDecoder, Segment, C2f_Att, C2f_DCN, C2f_DCN2, BiFPN_Concat2, BiFPN_Concat3, SPDConv, CSPOmniKernel)
+                                    ResNetLayer, RTDETRDecoder, Segment, C2f_Att, C2f_DCN, C2f_DCN2, BiFPN_Concat2, BiFPN_Concat3, SPDConv, CSPOmniKernel, SBA)
 from ultralytics.utils import DEFAULT_CFG_DICT, DEFAULT_CFG_KEYS, LOGGER, colorstr, emojis, yaml_load
 from ultralytics.utils.checks import check_requirements, check_suffix, check_yaml
 from ultralytics.utils.loss import v8ClassificationLoss, v8DetectionLoss, v8PoseLoss, v8SegmentationLoss
@@ -825,6 +825,12 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [ch[f]]
         elif m in [Concat, BiFPN_Concat2, BiFPN_Concat3]:
             c2 = sum(ch[x] for x in f)
+
+        elif m in {SBA}:
+            c1 = [ch[x] for x in f]
+            c2 = c1[-1]
+            args = [c1, c2]
+      
         elif m is CGAFusion:
             c2 = ch[f[1]]
             args = [c2, *args]
