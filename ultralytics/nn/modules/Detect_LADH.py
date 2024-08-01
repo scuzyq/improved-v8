@@ -3,8 +3,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.init import constant_, xavier_uniform_
-
+from ultralytics.nn.modules.conv import Conv
 from ultralytics.nn.modules.conv import DSConv
+
+from ultralytics.nn.modules.block import DFL, Proto
+
 from ultralytics.nn.modules.conv import autopad
 from ultralytics.utils.tal import dist2bbox, make_anchors, dist2rbox
 # from ultralytics.utils.ops import nmsfree_postprocess
