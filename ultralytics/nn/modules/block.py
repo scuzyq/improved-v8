@@ -784,6 +784,12 @@ class CSPOmniKernel(nn.Module):
 
 
 
+def Upsample(x, size, align_corners = False):
+    """
+    Wrapper Around the Upsample Call
+    """
+    return nn.functional.interpolate(x, size=size, mode='bilinear', align_corners=align_corners)
+
 
 class SBA(nn.Module):
 
