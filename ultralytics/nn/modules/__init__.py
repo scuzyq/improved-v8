@@ -18,7 +18,7 @@ Example:
 """
 
 from .block import (C1, C2, C3, C3TR, DFL, SPP, SPPF, Bottleneck, BottleneckCSP, C2f, C3Ghost, C3x, GhostBottleneck,
-                    HGBlock, HGStem, Proto, RepC3, ResNetLayer,C2f_Att, C2f_DCN, C2f_DCN2, BiFPN_Concat2, BiFPN_Concat3, SPDConv, CSPOmniKernel)
+                    HGBlock, HGStem, Proto, RepC3, ResNetLayer,C2f_Att, C2f_DCN, C2f_DCN2, BiFPN_Concat2, BiFPN_Concat3, SPDConv, CSPOmniKernel, SBA)
 from .conv import (CBAM, ChannelAttention, Concat, Conv, Conv2, ConvTranspose, DWConv, DWConvTranspose2d, Focus,
                    GhostConv, LightConv, RepConv, SpatialAttention,EMA_attention, DSConv)
 from .head import Classify, Detect, Pose, RTDETRDecoder, Segment
@@ -32,4 +32,4 @@ __all__ = ('Conv', 'Conv2', 'LightConv', 'RepConv', 'DWConv', 'DWConvTranspose2d
            'TransformerBlock', 'MLPBlock', 'LayerNorm2d', 'DFL', 'HGBlock', 'HGStem', 'SPP', 'SPPF', 'C1', 'C2', 'C3',
            'C2f', 'C3x', 'C3TR', 'C3Ghost', 'GhostBottleneck', 'Bottleneck', 'BottleneckCSP', 'Proto', 'Detect',
            'Segment', 'Pose', 'Classify', 'TransformerEncoderLayer', 'RepC3', 'RTDETRDecoder', 'AIFI',
-           'DeformableTransformerDecoder', 'DeformableTransformerDecoderLayer', 'MSDeformAttn', 'MLP', 'ResNetLayer', 'C2f_Att', 'C2f_DCN', 'C2f_DCN2','BiFPN_Concat2',  'BiFPN_Concat3', 'SPDConv', 'CSPOmniKernel', 'DSConv')
+           'DeformableTransformerDecoder', 'DeformableTransformerDecoderLayer', 'MSDeformAttn', 'MLP', 'ResNetLayer', 'C2f_Att', 'C2f_DCN', 'C2f_DCN2','BiFPN_Concat2',  'BiFPN_Concat3', 'SPDConv', 'CSPOmniKernel', 'DSConv', 'SBA')
