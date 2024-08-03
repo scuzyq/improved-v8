@@ -26,6 +26,8 @@ from ultralytics.nn.modules.ACmix import ACmix
 
 
 
+from ultralytics.nn.modules.ASFYOLO import attention_model, Add, ScalSeq, Zoom_cat
+
 
 from ultralytics.nn.modules.AFPN import Detect_AFPN
 
@@ -832,6 +834,19 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         elif m in [Concat, BiFPN_Concat2, BiFPN_Concat3]:
             c2 = sum(ch[x] for x in f)
 
+
+        elif m is Zoom_cat:
+            c2 = sum(ch[x] for x in f)
+        elif m is Add:
+            c2 = ch[f[-1]]
+        elif m is ScalSeq:
+            c1 = [ch[x] for x in f]
+            c2 = make_divisible(args[0] * width, 8)
+            args = [c1, c2]
+        elif m is attention_model:
+            args = [ch[f[-1]]]
+
+      
         elif m in {SBA}:
             c1 = [ch[x] for x in f]
             c2 = c1[-1]
