@@ -13,7 +13,7 @@ from .transformer import TransformerBlock
 
 
 __all__ = ('DFL', 'HGBlock', 'HGStem', 'SPP', 'SPPF', 'C1', 'C2', 'C3', 'C2f', 'C3x', 'C3TR', 'C3Ghost',
-           'GhostBottleneck', 'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3', 'ResNetLayer', 'C2f_Att','C2f_DCN2','BiFPN_Concat2', 'BiFPN_Concat3','SPDConv', 'CSPOmniKernel','SBA')
+           'GhostBottleneck', 'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3', 'ResNetLayer', 'C2f_Att','C2f_DCN2','BiFPN_Concat2', 'BiFPN_Concat3','SPDConv', 'CSPOmniKernel','SBA','FeaturePyramidSharedConv')
 
 
 class DFL(nn.Module):
@@ -825,6 +825,31 @@ class SBA(nn.Module):
         H_feature = Upsample(H_feature, size = L_feature.size()[2:])
         out = self.conv(torch.cat([H_feature, L_feature], dim=1))
         return out
+
+
+
+######################################## FeaturePyramidSharedConv Module start ########################################
+
+class FeaturePyramidSharedConv(nn.Module):
+    def __init__(self, c1, c2, dilations=[1, 3, 5]) -> None:
+        super().__init__()
+
+        c_ = c1 // 2  # hidden channels
+        self.cv1 = Conv(c1, c_, 1, 1)
+        self.cv2 = Conv(c_ * (1 + len(dilations)), c2, 1, 1)
+        self.share_conv = nn.Conv2d(in_channels=c_, out_channels=c_, kernel_size=3, stride=1, padding=1, bias=False)
+        self.dilations = dilations
+    
+    def forward(self, x):
+        y = [self.cv1(x)]
+        for dilation in self.dilations:
+            y.append(F.conv2d(y[-1], weight=self.share_conv.weight, bias=None, dilation=dilation, padding=(dilation * (3 - 1) + 1) // 2))
+        return self.cv2(torch.cat(y, 1))
+        
+######################################## FeaturePyramidSharedConv Module end ########################################
+
+
+
 
 
 # class C2f_VSS(C2f):
