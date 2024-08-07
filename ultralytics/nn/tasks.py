@@ -29,6 +29,10 @@ from ultralytics.nn.modules.ACmix import ACmix
 from ultralytics.nn.modules.ASFYOLO import attention_model, Add, ScalSeq, Zoom_cat
 
 
+from ultralytics.nn.modules.dysampleSCAM import DySample,SCAM
+
+
+
 from ultralytics.nn.modules.AFPN import Detect_AFPN
 
 from ultralytics.nn.modules.ASFFHead import Detect_ASFF
@@ -831,6 +835,16 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                 n = 1
         elif m is AIFI:
             args = [ch[f], *args]
+
+        elif m is DySample:
+            c2 = ch[f]
+            args = [c2, *args]
+        elif m is SCAM:
+            c2 = ch[f]
+            args = [c2]
+
+      
+      
         elif m in (HGStem, HGBlock):
             c1, cm, c2 = ch[f], args[0], args[1]
             args = [c1, cm, c2, *args[2:]]
