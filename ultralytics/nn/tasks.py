@@ -49,6 +49,9 @@ from ultralytics.nn.modules.Detect_LADH import Detect_LADH
 from ultralytics.nn.modules.dyhead2 import Detect_dyhead3
 
 
+from ultralytics.nn.modules.DEANet import CGAFusion
+
+
 from ultralytics.nn.modules.Detect_improve_s import Detect_improve_s
 
 
@@ -870,6 +873,12 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         elif m is attention_model:
             args = [ch[f[-1]]]
 
+
+        elif m is CGAFusion:
+            c2 = ch[f[1]]
+            args = [c2, *args]
+
+      
       
         elif m in {SBA}:
             c1 = [ch[x] for x in f]
