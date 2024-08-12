@@ -25,7 +25,7 @@ from ultralytics.nn.modules.head_improve import Detect_improve
 from ultralytics.nn.modules.ACmix import ACmix
 
 
-from ultralytics.nn.modules.PSA import PSA
+# from ultralytics.nn.modules.PSA import PSA
 
 
 from ultralytics.nn.modules.Detect_SC_C import Detect_SC_C
@@ -123,7 +123,7 @@ from ultralytics.nn.modules.FFANet import FFA
 
 from ultralytics.nn.modules.LSKAttention import LSKA
 
-# from ultralytics.nn.yolov10 import PSA
+from ultralytics.nn.yolov10 import PSA
 
 from ultralytics.nn.modules.att import *
 
