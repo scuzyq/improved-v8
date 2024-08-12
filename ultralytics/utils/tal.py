@@ -157,12 +157,8 @@ class TaskAlignedAssigner(nn.Module):
         # (b, max_num_obj, 1, 4), (b, 1, h*w, 4)
         pd_boxes = pd_bboxes.unsqueeze(1).expand(-1, self.n_max_boxes, -1, -1)[mask_gt]
         gt_boxes = gt_bboxes.unsqueeze(2).expand(-1, -1, na, -1)[mask_gt]
+        overlaps[mask_gt] = bbox_iou(gt_boxes, pd_boxes, xywh=False, CIoU=True).squeeze(-1).clamp_(0)
 
-
-        overlaps[mask_gt] = bbox_iou(gt_boxes, pd_boxes, xywh=False, GIoU=False, DIoU=False, CIoU=True,
-                                     EIoU=False, SIoU=False, WIoU=False, ShapeIoU=True, Inner=False,
-                                     ratio=0.7, eps=1e-7, scale=0.0).squeeze(-1).clamp_(0)
-        
         align_metric = bbox_scores.pow(self.alpha) * overlaps.pow(self.beta)
         return align_metric, overlaps
 
@@ -281,24 +277,3 @@ def bbox2dist(anchor_points, bbox, reg_max):
     """Transform bbox(xyxy) to dist(ltrb)."""
     x1y1, x2y2 = bbox.chunk(2, -1)
     return torch.cat((anchor_points - x1y1, x2y2 - anchor_points), -1).clamp_(0, reg_max - 0.01)  # dist (lt, rb)
-
-
-def dist2rbox(pred_dist, pred_angle, anchor_points, dim=-1):
-    """
-    Decode predicted object bounding box coordinates from anchor points and distribution.
-
-    Args:
-        pred_dist (torch.Tensor): Predicted rotated distance, (bs, h*w, 4).
-        pred_angle (torch.Tensor): Predicted angle, (bs, h*w, 1).
-        anchor_points (torch.Tensor): Anchor points, (h*w, 2).
-    Returns:
-        (torch.Tensor): Predicted rotated bounding boxes, (bs, h*w, 4).
-    """
-    lt, rb = pred_dist.split(2, dim=dim)
-    cos, sin = torch.cos(pred_angle), torch.sin(pred_angle)
-    # (bs, h*w, 1)
-    xf, yf = ((rb - lt) / 2).split(1, dim=dim)
-    x, y = xf * cos - yf * sin, xf * sin + yf * cos
-    xy = torch.cat([x, y], dim=dim) + anchor_points
-    return torch.cat([xy, lt + rb], dim=dim)
-
