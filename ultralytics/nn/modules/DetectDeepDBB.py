@@ -14,10 +14,8 @@ from ultralytics.nn.modules.conv import Conv
 from ultralytics.nn.modules.transformer import MLP, DeformableTransformerDecoder, DeformableTransformerDecoderLayer
 from ultralytics.nn.modules.utils import bias_init_with_prob, linear_init_
 
-__all__ = 'Detect', 'Segment', 'Pose', 'Classify', 'RTDETRDecoder','DetectDBB','DetectACDBB','DetectAC','DetectDeepDBB',\
-          'DetectDeepACDBB' , 'Detect_Efficient','DetectSingleDBB','Detect2AC2DBB',\
-          'Detect2DBB2AC','Detect2DBBAC','Detect2ACDBB','Detect_Efficient3DBB','Detect_Efficient3DBBR','Rep3CHead'
 
+__all__ = ['DetectDeepDBB']
 
 class DetectDeepDBB(nn.Module):
     """YOLOv8 Detect head for detection models."""
