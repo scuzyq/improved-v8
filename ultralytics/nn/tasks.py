@@ -10,7 +10,7 @@ import torch.nn as nn
 from ultralytics.nn.modules import (AIFI, C1, C2, C3, C3TR, SPP, SPPF, Bottleneck, BottleneckCSP, C2f, C3Ghost, C3x,
                                     Classify, Concat, Conv, Conv2, ConvTranspose, Detect, DWConv, DWConvTranspose2d,
                                     Focus, GhostBottleneck, GhostConv, HGBlock, HGStem, Pose, RepC3, RepConv,
-                                    ResNetLayer, RTDETRDecoder, Segment, C2f_Att, C2f_DCN, C2f_DCN2, BiFPN_Concat2, BiFPN_Concat3, SPDConv, CSPOmniKernel, SBA, FeaturePyramidSharedConv)
+                                    ResNetLayer, RTDETRDecoder, Segment, C2f_Att, C2f_DCN, C2f_DCN2, BiFPN_Concat2, BiFPN_Concat3, SPDConv, CSPOmniKernel, SBA, FeaturePyramidSharedConv, C2f_DeepDBB)
 from ultralytics.utils import DEFAULT_CFG_DICT, DEFAULT_CFG_KEYS, LOGGER, colorstr, emojis, yaml_load
 from ultralytics.utils.checks import check_requirements, check_suffix, check_yaml
 from ultralytics.utils.loss import v8ClassificationLoss, v8DetectionLoss, v8PoseLoss, v8SegmentationLoss
@@ -842,13 +842,13 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
 
         n = n_ = max(round(n * depth), 1) if n > 1 else n  # depth gain
         if m in (Classify, Conv, ConvTranspose, GhostConv, Bottleneck, GhostBottleneck, SPP, SPPF, SPDConv, DWConv, Focus,
-                 BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, nn.ConvTranspose2d, DWConvTranspose2d, C3x, RepC3, C2f_Att, C2f_DCN, NAMAttention, PSA, C2f_UIB, BasicRFB, MCALayer, CSPStage, C2f_deformable_LKA, SKAttention, C2f_DySnakeConv,EMA_attention, SCDown, C2f_MSBlock, RepNCSPELAN4_low, RepNCSPELAN4_high, RCSOSA, C2f_MLCA, C2f_DCNv3_DLKA, C2fMLLABlock, C2f_Dual, C2f_DCN2, C2f_KAN, FeaturePyramidSharedConv, CSPStage, MSFN):
+                 BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, nn.ConvTranspose2d, DWConvTranspose2d, C3x, RepC3, C2f_Att, C2f_DCN, NAMAttention, PSA, C2f_UIB, BasicRFB, MCALayer, CSPStage, C2f_deformable_LKA, SKAttention, C2f_DySnakeConv,EMA_attention, SCDown, C2f_MSBlock, RepNCSPELAN4_low, RepNCSPELAN4_high, RCSOSA, C2f_MLCA, C2f_DCNv3_DLKA, C2fMLLABlock, C2f_Dual, C2f_DCN2, C2f_KAN, FeaturePyramidSharedConv, CSPStage, MSFN, C2f_DeepDBB):
             c1, c2 = ch[f], args[0]
             if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
                 c2 = make_divisible(min(c2, max_channels) * width, 8)
 
             args = [c1, c2, *args[1:]]
-            if m in (BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, C3x, RepC3, C2f_Att, C2f_DCN, C2f_UIB, C2f_deformable_LKA, SKAttention, C2f_DySnakeConv,EMA_attention, C2f_MSBlock, C2f_MLCA, C2f_DCNv3_DLKA, C2fMLLABlock, C2f_Dual, C2f_DCN2, C2f_KAN, CSPStage):
+            if m in (BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, C3x, RepC3, C2f_Att, C2f_DCN, C2f_UIB, C2f_deformable_LKA, SKAttention, C2f_DySnakeConv,EMA_attention, C2f_MSBlock, C2f_MLCA, C2f_DCNv3_DLKA, C2fMLLABlock, C2f_Dual, C2f_DCN2, C2f_KAN, CSPStage, C2f_DeepDBB):
                 args.insert(2, n)  # number of repeats
                 n = 1
         elif m is AIFI:
