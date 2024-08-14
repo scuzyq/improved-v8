@@ -9,11 +9,14 @@ import math
 from .conv import Conv, DWConv, GhostConv, LightConv, RepConv
 from .transformer import TransformerBlock
 
+from .rep_block import *
+
+
 # from .mamba_vss import *
 
 
 __all__ = ('DFL', 'HGBlock', 'HGStem', 'SPP', 'SPPF', 'C1', 'C2', 'C3', 'C2f', 'C3x', 'C3TR', 'C3Ghost',
-           'GhostBottleneck', 'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3', 'ResNetLayer', 'C2f_Att','C2f_DCN2','BiFPN_Concat2', 'BiFPN_Concat3','SPDConv', 'CSPOmniKernel','SBA','FeaturePyramidSharedConv')
+           'GhostBottleneck', 'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3', 'ResNetLayer', 'C2f_Att','C2f_DCN2','BiFPN_Concat2', 'BiFPN_Concat3','SPDConv', 'CSPOmniKernel','SBA','FeaturePyramidSharedConv','C2f_DeepDBB')
 
 
 class DFL(nn.Module):
@@ -848,6 +851,19 @@ class FeaturePyramidSharedConv(nn.Module):
         
 ######################################## FeaturePyramidSharedConv Module end ########################################
 
+
+
+class Bottleneck_DeepDBB(Bottleneck):
+    def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5):
+        super().__init__(c1, c2, shortcut, g, k, e)
+        c_ = int(c2 * e)  # hidden channels
+        self.cv1 = DeepDiverseBranchBlock(c1, c_, k[0], 1)
+        self.cv2 = DeepDiverseBranchBlock(c_, c2, k[1], 1, groups=g)
+
+class C2f_DeepDBB(C2f):
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):
+        super().__init__(c1, c2, n, shortcut, g, e)
+        self.m = nn.ModuleList(Bottleneck_DeepDBB(self.c, self.c, shortcut, g, k=(3, 3), e=1.0) for _ in range(n))
 
 
 
