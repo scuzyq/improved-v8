@@ -132,6 +132,12 @@ from ultralytics.nn.modules.att import *
 
 from ultralytics.nn.modules.VanillaNet import *
 
+
+from ultralytics.nn.modules.starnet import starnet_s1, starnet_s2, starnet_s3, starnet_s4
+
+
+
+
 from ultralytics.nn.modules.FasterNet import FasterNet
 
 
@@ -929,7 +935,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         elif m in {ACmix}:
             args = [ch[f],  ch[f]]
 
-        elif m in {vanillanet_5, vanillanet_6, vanillanet_7, vanillanet_8, vanillanet_9, vanillanet_10(), FasterNet, MobileNetV3, EMO_1M, EMO_2M, EMO_5M, EMO_6M}:
+        elif m in {vanillanet_5, vanillanet_6, vanillanet_7, vanillanet_8, vanillanet_9, vanillanet_10(), FasterNet, MobileNetV3, EMO_1M, EMO_2M, EMO_5M, EMO_6M, starnet_s1, starnet_s2, starnet_s3, starnet_s4}:
             m = m()
             c2 = m.width_list  # 返回通道列表
             backbone = True
