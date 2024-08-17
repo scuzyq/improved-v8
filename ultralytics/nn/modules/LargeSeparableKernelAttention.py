@@ -1,7 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
- 
+from ultralytics.nn.modules.conv import Conv
+
+
+
  
 class LSKA(nn.Module):
     def __init__(self, dim, k_size):
