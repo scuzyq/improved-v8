@@ -44,6 +44,8 @@ from ultralytics.nn.modules.ASFYOLO import attention_model, Add, ScalSeq, Zoom_c
 from ultralytics.nn.modules.dysampleSCAM import DySample,SCAM
 
 
+from ultralytics.nn.modules.kan_conv import C2f_KAN
+
 
 from ultralytics.nn.modules.LargeSeparableKernelAttention import SPPF_LSKA
 
