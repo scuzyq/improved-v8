@@ -24,6 +24,9 @@ from ultralytics.nn.modules.head_improve import Detect_improve
 
 from ultralytics.nn.modules.SWS import SimAMWithSlicing,Conv_SWS
 
+from ultralytics.nn.modules.YOLOMousePose  import  *
+
+
 
 from ultralytics.nn.modules.YOLOJD  import  DSCFEM,SPPM
 
@@ -985,6 +988,23 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             if c2 != nc:
                 c2 = make_divisible(min(c2, max_channels) * width, 8)
             args = [c1, *args[1:]]
+
+                 ###YOLOMousePose #####
+        elif m in {ChannelSelection_Top,ChannelSelection_Medium,ChannelSelection_Bottom}:
+            c2 = args[0]
+            if c2 != nc:  # if not output
+                c2 = make_divisible(min(c2, max_channels) * width, 8)
+            args = [[ch[f_] for f_ in f], c2]
+        elif m is FusionEncoder:
+            c1 = ch[f]
+            c2 = sum(args[0])
+            args = [c1, *args]
+        elif m is WeightedInject:
+            c1 = ch[f[0]]
+            c2 = args[0]
+            args = [c1, *args]
+        ###YOLOMousePose #####
+
 
       
       
