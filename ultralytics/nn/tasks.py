@@ -34,6 +34,10 @@ from ultralytics.nn.modules.YOLOJD  import  DSCFEM,SPPM
 # from ultralytics.nn.modules.starnet import C2f_StarNB
 
 
+from ultralytics.nn.modules.ca import CA
+
+
+
 from ultralytics.nn.modules.repfpn import RepVGGBlock, SimSPPF, SimConv, RepBlock, Transpose
 
 
@@ -41,7 +45,7 @@ from ultralytics.nn.modules.repfpn import RepVGGBlock, SimSPPF, SimConv, RepBloc
 from ultralytics.nn.modules.LANet import C2f_EFAttention
 
 
-from ultralytics.nn.modules.denseone import DenseOne，DenseOneC
+from ultralytics.nn.modules.denseone import DenseOne,DenseOneC
 
 
 from ultralytics.nn.modules.CPMS import CPMS
@@ -1039,6 +1043,11 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                 args.insert(2, n)  # number of repeats
                 n = 1
 
+          elif m is CA:
+            c1, c2 = ch[f], args[0]
+            if c2 != no:  # if not outputss
+                c2 = make_divisible(min(c2, max_channels) * width, 8)
+            args = [c1, c2, *args[1:]]
 
 
 
