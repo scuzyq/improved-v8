@@ -1045,7 +1045,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                 n = 1
 
       
-         elif m in [DenseOne, DenseOneC]:
+        elif m in [DenseOne, DenseOneC]:
             c1, c2 = ch[f], args[0]
             if c2 != nc:
                 c2 = make_divisible(min(c2, max_channels) * width, 8)
@@ -1054,9 +1054,9 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                 args.insert(2, n)  # number of repeats
                 n = 1
 
-          elif m is CA:
+         elif m is CA:
             c1, c2 = ch[f], args[0]
-            if c2 != no:  # if not outputss
+            if c2 != nc:  # if not outputss
                 c2 = make_divisible(min(c2, max_channels) * width, 8)
             args = [c1, c2, *args[1:]]
 
