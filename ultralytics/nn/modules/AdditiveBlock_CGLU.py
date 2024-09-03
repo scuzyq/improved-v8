@@ -7,8 +7,8 @@ import numpy as np
 from functools import partial
 from typing import Optional, Callable, Union
 from einops import rearrange
-from ..modules.conv import Conv, DWConv, DSConv, RepConv, GhostConv, autopad
-from ..modules.block import *
+from ultralytics.nn.modules.conv import Conv, DWConv, DSConv, RepConv, GhostConv, autopad
+from from ultralytics.nn.modules.block import *
 
 ######################################## CAS-ViT start ########################################
 
