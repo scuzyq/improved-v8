@@ -330,7 +330,7 @@ class BboxLoss(nn.Module):
         weight = target_scores.sum(-1)[fg_mask].unsqueeze(-1)
         iou = bbox_iou(pred_bboxes[fg_mask], target_bboxes[fg_mask],
         # 想用那个对应的设置为True即可，比如我想用innerEIoU,那么我只需要把inner设置为True和EIoU设置为True，那么此时组合起来就是InnerEIoU！
-                           xywh=False, GIoU=False, DIoU=False, CIoU=True, EIoU=False, SIoU=False, WIoU=False,
+                           xywh=False, GIoU=False, DIoU=False, CIoU=False, EIoU=False, SIoU=False, WIoU=True,
                            ShapeIoU=False, Focaleriou=False, hw=hw[fg_mask], mpdiou=False, Inner=False, ratio=0.75,
                            eps=1e-7, scale=0.0)
         loss_iou = ((1.0 - iou) * weight).sum() / target_scores_sum
