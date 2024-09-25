@@ -31,6 +31,10 @@ from ultralytics.nn.modules.CACSYOLO import CACS_C2f
 from ultralytics.nn.modules.YOLOJD  import  DSCFEM,SPPM
 
 
+
+from ultralytics.nn.modules.LSMYOLO  import  *
+
+
 # from ultralytics.nn.modules.starnet import C2f_StarNB
 
 
@@ -976,7 +980,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                 args[2] = make_divisible(min(args[2], max_channels) * width, 8)
         elif m is RTDETRDecoder:  # special case, channels arg must be passed in index 1
             args.insert(1, [ch[x] for x in f])
-        elif m in (EMA, CBAMBlock, SEAttention, LSKblock, ShuffleAttention, EfficientAttention, FFA, deformable_LKA_Attention, MLLAttention):
+        elif m in (EMA, CBAMBlock, SEAttention, LSKblock, ShuffleAttention, EfficientAttention, FFA, deformable_LKA_Attention, MLLAttention, LAE):
             c2 = ch[f]
             args = [c2, *args]
         elif m in (TripletAttention,):
