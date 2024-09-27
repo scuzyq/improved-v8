@@ -37,6 +37,9 @@ from ultralytics.nn.modules.LSMYOLO  import  *
 
 
 
+from ultralytics.nn.modules.ALSS_YOLO import ALSS,LCA
+
+
 from ultralytics.nn.modules.MDeformConv  import  *
 
 
@@ -915,7 +918,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
 
         n = n_ = max(round(n * depth), 1) if n > 1 else n  # depth gain
         if m in (Classify, Conv, ConvTranspose, GhostConv, Bottleneck, GhostBottleneck, SPP, SPPF, SPDConv, DWConv, Focus,
-                 BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, nn.ConvTranspose2d, DWConvTranspose2d, C3x, RepC3, C2f_Att, C2f_DCN, NAMAttention, PSA, C2f_UIB, BasicRFB, MCALayer, CSPStage, C2f_deformable_LKA, SKAttention, C2f_DySnakeConv,EMA_attention, SCDown, C2f_MSBlock, RepNCSPELAN4_low, RepNCSPELAN4_high, RCSOSA, C2f_MLCA, C2f_DCNv3_DLKA, C2fMLLABlock, C2f_Dual, C2f_DCN2, C2f_KAN, FeaturePyramidSharedConv, CSPStage, MSFN, C2f_DeepDBB, SPPF_LSKA, Conv_SWS, DSCFEM,SPPM, C2f_EFAttention, SCSA, MoCAttention, CACS_C2f, C2f_Heat, C2f_AdditiveBlock, mn_conv,InvertedBottleneck,MobileNetV3_BLOCK, C2f_AdditiveBlock_CGLU, ResBlock_CBAM, ModulatedDeformConv2dPack):
+                 BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, nn.ConvTranspose2d, DWConvTranspose2d, C3x, RepC3, C2f_Att, C2f_DCN, NAMAttention, PSA, C2f_UIB, BasicRFB, MCALayer, CSPStage, C2f_deformable_LKA, SKAttention, C2f_DySnakeConv,EMA_attention, SCDown, C2f_MSBlock, RepNCSPELAN4_low, RepNCSPELAN4_high, RCSOSA, C2f_MLCA, C2f_DCNv3_DLKA, C2fMLLABlock, C2f_Dual, C2f_DCN2, C2f_KAN, FeaturePyramidSharedConv, CSPStage, MSFN, C2f_DeepDBB, SPPF_LSKA, Conv_SWS, DSCFEM,SPPM, C2f_EFAttention, SCSA, MoCAttention, CACS_C2f, C2f_Heat, C2f_AdditiveBlock, mn_conv,InvertedBottleneck,MobileNetV3_BLOCK, C2f_AdditiveBlock_CGLU, ResBlock_CBAM, ModulatedDeformConv2dPack, ALSS,LCA):
             c1, c2 = ch[f], args[0]
             if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
                 c2 = make_divisible(min(c2, max_channels) * width, 8)
@@ -925,7 +928,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
               if isinstance(args[3],int): #might use "None"
                 args[3] = make_divisible(min(args[3], max_channels) * width, 8)
 
-            if m in (BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, C3x, RepC3, C2f_Att, C2f_DCN, C2f_UIB, C2f_deformable_LKA, SKAttention, C2f_DySnakeConv,EMA_attention, C2f_MSBlock, C2f_MLCA, C2f_DCNv3_DLKA, C2fMLLABlock, C2f_Dual, C2f_DCN2, C2f_KAN, CSPStage, C2f_DeepDBB, C2f_EFAttention, CACS_C2f, C2f_Heat, C2f_AdditiveBlock, C2f_AdditiveBlock_CGLU):
+            if m in (BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, C3x, RepC3, C2f_Att, C2f_DCN, C2f_UIB, C2f_deformable_LKA, SKAttention, C2f_DySnakeConv,EMA_attention, C2f_MSBlock, C2f_MLCA, C2f_DCNv3_DLKA, C2fMLLABlock, C2f_Dual, C2f_DCN2, C2f_KAN, CSPStage, C2f_DeepDBB, C2f_EFAttention, CACS_C2f, C2f_Heat, C2f_AdditiveBlock, C2f_AdditiveBlock_CGLU, ALSS):
                 args.insert(2, n)  # number of repeats
                 n = 1
         elif m is AIFI:
