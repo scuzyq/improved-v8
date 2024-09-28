@@ -36,6 +36,9 @@ from ultralytics.nn.modules.LSMYOLO  import  *
 
 
 
+from ultralytics.nn.modules.FreqFusion  import  *
+
+
 
 from ultralytics.nn.modules.ALSS_YOLO import ALSS,LCA
 
@@ -1019,6 +1022,13 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             c2 = m.channel
             backbone = True
 
+        
+        elif m in {FreqFusion}:
+            c2 = ch[f[0]]
+            args = [[ch[x] for x in f], *args]
+
+
+  
 
         elif m is SimAMWithSlicing:
             c1, c2 = ch[f], args[0]
