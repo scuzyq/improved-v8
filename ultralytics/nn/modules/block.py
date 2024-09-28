@@ -16,7 +16,7 @@ from .rep_block import *
 
 
 __all__ = ('DFL', 'HGBlock', 'HGStem', 'SPP', 'SPPF', 'C1', 'C2', 'C3', 'C2f', 'C3x', 'C3TR', 'C3Ghost',
-           'GhostBottleneck', 'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3', 'ResNetLayer', 'C2f_Att','C2f_DCN2','BiFPN_Concat2', 'BiFPN_Concat3','SPDConv', 'CSPOmniKernel','SBA','FeaturePyramidSharedConv','C2f_DeepDBB')
+           'GhostBottleneck', 'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3', 'ResNetLayer', 'C2f_Att','C2f_DCN2','BiFPN_Concat2', 'BiFPN_Concat3','SPDConv', 'CSPOmniKernel','SBA','FeaturePyramidSharedConv','C2f_DeepDBB', 'C2f_SHSA_CGLU', 'C2f_SHSA')
 
 
 class DFL(nn.Module):
