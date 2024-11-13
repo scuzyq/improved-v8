@@ -32,6 +32,11 @@ from ultralytics.nn.modules.YOLOJD  import  DSCFEM,SPPM
 
 
 
+from ultralytics.nn.modules.RepHead import *
+
+
+
+
 from ultralytics.nn.modules.LSMYOLO  import  *
 
 
