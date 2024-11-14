@@ -1,50 +1,41 @@
-# Copyright (c) OpenMMLab. All rights reserved.
-from mmcv.cnn import (build_activation_layer, build_norm_layer, constant_init,
-                      normal_init)
-from mmcv.ops.modulated_deform_conv import ModulatedDeformConv2d
-# from models.modulated_deform_conv import ModulatedDeformConv2d
-# from mmdet.models.utils import DyReLU
-# Reference:
-# https://github.com/microsoft/DynamicHead
-# https://github1s.com/yang-0201/YOLOv6_pro
-####DyRelu
+import math
+from mmcv.ops import ModulatedDeformConv2d
+from ultralytics.nn.modules.ASFFhead import DFL
+from ultralytics.utils.tal import dist2bbox, make_anchors
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+ 
+ 
 def _make_divisible(v, divisor, min_value=None):
     if min_value is None:
         min_value = divisor
     new_v = max(min_value, int(v + divisor / 2) // divisor * divisor)
+    # Make sure that round down does not go down by more than 10%.
     if new_v < 0.9 * v:
         new_v += divisor
     return new_v
-
-
-class swish(nn.Module):
-    def forward(self, x):
-        return x * torch.sigmoid(x)
-
-
+ 
+ 
 class h_swish(nn.Module):
     def __init__(self, inplace=False):
         super(h_swish, self).__init__()
         self.inplace = inplace
-
+ 
     def forward(self, x):
         return x * F.relu6(x + 3.0, inplace=self.inplace) / 6.0
-
-
+ 
+ 
 class h_sigmoid(nn.Module):
     def __init__(self, inplace=True, h_max=1):
         super(h_sigmoid, self).__init__()
         self.relu = nn.ReLU6(inplace=inplace)
         self.h_max = h_max
-
+ 
     def forward(self, x):
         return self.relu(x + 3) * self.h_max / 6
-
-
+ 
+ 
 class DYReLU(nn.Module):
     def __init__(self, inp, oup, reduction=4, lambda_a=1.0, K2=True, use_bias=True, use_spatial=False,
                  init_a=[1.0, 0.0], init_b=[0.0, 0.0]):
@@ -53,7 +44,7 @@ class DYReLU(nn.Module):
         self.lambda_a = lambda_a * 2
         self.K2 = K2
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
-
+ 
         self.use_bias = use_bias
         if K2:
             self.exp = 4 if use_bias else 2
@@ -61,13 +52,15 @@ class DYReLU(nn.Module):
             self.exp = 2 if use_bias else 1
         self.init_a = init_a
         self.init_b = init_b
-
+ 
         # determine squeeze
         if reduction == 4:
             squeeze = inp // reduction
         else:
             squeeze = _make_divisible(inp // reduction, 4)
-
+        # print('reduction: {}, squeeze: {}/{}'.format(reduction, inp, squeeze))
+        # print('init_a: {}, init_b: {}'.format(self.init_a, self.init_b))
+ 
         self.fc = nn.Sequential(
             nn.Linear(inp, squeeze),
             nn.ReLU(inplace=True),
@@ -81,7 +74,7 @@ class DYReLU(nn.Module):
             )
         else:
             self.spa = None
-
+ 
     def forward(self, x):
         if isinstance(x, list):
             x_in = x[0]
@@ -96,7 +89,7 @@ class DYReLU(nn.Module):
             a1, b1, a2, b2 = torch.split(y, self.oup, dim=1)
             a1 = (a1 - 0.5) * self.lambda_a + self.init_a[0]  # 1.0
             a2 = (a2 - 0.5) * self.lambda_a + self.init_a[1]
-
+ 
             b1 = b1 - 0.5 + self.init_b[0]
             b2 = b2 - 0.5 + self.init_b[1]
             out = torch.max(x_out * a1 + b1, x_out * a2 + b2)
@@ -106,191 +99,206 @@ class DYReLU(nn.Module):
                 a1 = (a1 - 0.5) * self.lambda_a + self.init_a[0]  # 1.0
                 b1 = b1 - 0.5 + self.init_b[0]
                 out = x_out * a1 + b1
-
+ 
             else:
                 a1, a2 = torch.split(y, self.oup, dim=1)
                 a1 = (a1 - 0.5) * self.lambda_a + self.init_a[0]  # 1.0
                 a2 = (a2 - 0.5) * self.lambda_a + self.init_a[1]
                 out = torch.max(x_out * a1, x_out * a2)
-
+ 
         elif self.exp == 1:
             a1 = y
             a1 = (a1 - 0.5) * self.lambda_a + self.init_a[0]  # 1.0
             out = x_out * a1
-
+ 
         if self.spa:
             ys = self.spa(x_in).view(b, -1)
             ys = F.softmax(ys, dim=1).view(b, 1, h, w) * h * w
             ys = F.hardtanh(ys, 0, 3, inplace=True)/3
             out = out * ys
-
+ 
         return out
-####
-
-class DyDCNv2(nn.Module):
-    """ModulatedDeformConv2d with normalization layer used in DyHead.
-    This module cannot be configured with `conv_cfg=dict(type='DCNv2')`
-    because DyHead calculates offset and mask from middle-level feature.
-    Args:
-        in_channels (int): Number of input channels.
-        out_channels (int): Number of output channels.
-        stride (int | tuple[int], optional): Stride of the convolution.
-            Default: 1.
-        norm_cfg (dict, optional): Config dict for normalization layer.
-            Default: dict(type='GN', num_groups=16, requires_grad=True).
-    """
-
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 stride=1,
-                 norm_cfg=dict(type='GN', num_groups=16, requires_grad=True)):
-        super().__init__()
-        self.with_norm = norm_cfg is not None
-        bias = not self.with_norm
-        self.stride = stride
-        kernel_size = 3
-        self.bias = bias
-        self.conv = ModulatedDeformConv2d(
-            in_channels, out_channels, 3, stride=stride, padding=1, bias=bias)
-        if self.with_norm:
-            self.norm = build_norm_layer(norm_cfg, out_channels)[1]
-        self.weight = nn.Parameter(torch.empty(out_channels, in_channels // 1, kernel_size, kernel_size))
-
-    def forward(self, x, offset, mask):
-        """Forward function."""
-        x = self.conv(x.contiguous(), offset, mask)
-        # x = deform_conv2d(
-        #     x.contiguous(),
-        #     offset=offset,
-        #     weight=self.weight,
-        #     stride=self.stride,
-        #     padding=1,
-        #     mask=mask,
-        # )
-        if self.with_norm:
-            x = self.norm(x)
+ 
+ 
+ 
+class Conv3x3Norm(torch.nn.Module):
+    def __init__(self, in_channels, out_channels, stride):
+        super(Conv3x3Norm, self).__init__()
+ 
+        self.conv = ModulatedDeformConv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1)
+        self.bn = nn.GroupNorm(num_groups=16, num_channels=out_channels)
+ 
+    def forward(self, input, **kwargs):
+        x = self.conv(input.contiguous(), **kwargs)
+        x = self.bn(x)
         return x
-
-
-class DyHeadBlock(nn.Module):
-    """DyHead Block with three types of attention.
-    HSigmoid arguments in default act_cfg follow official code, not paper.
-    https://github.com/microsoft/DynamicHead/blob/master/dyhead/dyrelu.py
-    Args:
-        in_channels (int): Number of input channels.
-        out_channels (int): Number of output channels.
-        zero_init_offset (bool, optional): Whether to use zero init for
-            `spatial_conv_offset`. Default: True.
-        act_cfg (dict, optional): Config dict for the last activation layer of
-            scale-aware attention. Default: dict(type='HSigmoid', bias=3.0,
-            divisor=6.0).
-    """
-
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 zero_init_offset=True,
-                 act_cfg=dict(type='HSigmoid', bias=3.0, divisor=6.0)):
-        super().__init__()
-        self.zero_init_offset = zero_init_offset
-        # (offset_x, offset_y, mask) * kernel_size_y * kernel_size_x
-        self.offset_and_mask_dim = 3 * 3 * 3
-        self.offset_dim = 2 * 3 * 3
-
-        self.scale_attn_module = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1), nn.Conv2d(out_channels, 1, 1),
-            nn.ReLU(inplace=True), build_activation_layer(act_cfg))
-
-        self.spatial_conv_high = DyDCNv2(in_channels, out_channels)
-        self.spatial_conv_mid = DyDCNv2(in_channels, out_channels)
-        self.spatial_conv_low = DyDCNv2(in_channels, out_channels, stride=2)
-
-
-        self.spatial_conv_offset = nn.Conv2d(
-            in_channels, self.offset_and_mask_dim, 3, padding=1)
-
-        self.task_attn_module = DYReLU(out_channels,out_channels)
-        self._init_weights()
-
-    def _init_weights(self):
-        for m in self.modules():
+ 
+class DyConv(nn.Module):
+    def __init__(self, in_channels=256, out_channels=256, conv_func=Conv3x3Norm):
+        super(DyConv, self).__init__()
+ 
+        self.DyConv = nn.ModuleList()
+        self.DyConv.append(conv_func(in_channels, out_channels, 1))
+        self.DyConv.append(conv_func(in_channels, out_channels, 1))
+        self.DyConv.append(conv_func(in_channels, out_channels, 2))
+ 
+        self.AttnConv = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(in_channels, 1, kernel_size=1),
+            nn.ReLU(inplace=True))
+ 
+        self.h_sigmoid = h_sigmoid()
+        self.relu = DYReLU(in_channels, out_channels)
+        self.offset = nn.Conv2d(in_channels, 27, kernel_size=3, stride=1, padding=1)
+        self.init_weights()
+ 
+    def init_weights(self):
+        for m in self.DyConv.modules():
             if isinstance(m, nn.Conv2d):
-                normal_init(m, 0, 0.01)
-        if self.zero_init_offset:
-            constant_init(self.spatial_conv_offset, 0)
-
+                nn.init.normal_(m.weight.data, 0, 0.01)
+                if m.bias is not None:
+                    m.bias.data.zero_()
+        for m in self.AttnConv.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.normal_(m.weight.data, 0, 0.01)
+                if m.bias is not None:
+                    m.bias.data.zero_()
+ 
     def forward(self, x):
-        """Forward function."""
-        outs = []
-        for level in range(len(x)):
-            # calculate offset and mask of DCNv2 from middle-level feature
-            offset_and_mask = self.spatial_conv_offset(x[level])
-            offset = offset_and_mask[:, :self.offset_dim, :, :]
-            mask = offset_and_mask[:, self.offset_dim:, :, :].sigmoid()
-
-            mid_feat = self.spatial_conv_mid(x[level], offset, mask)
-            sum_feat = mid_feat * self.scale_attn_module(mid_feat)
-            summed_levels = 1
+        next_x = {}
+        feature_names = list(x.keys())
+        for level, name in enumerate(feature_names):
+ 
+            feature = x[name]
+ 
+            offset_mask = self.offset(feature)
+            offset = offset_mask[:, :18, :, :]
+            mask = offset_mask[:, 18:, :, :].sigmoid()
+            conv_args = dict(offset=offset, mask=mask)
+ 
+            temp_fea = [self.DyConv[1](feature, **conv_args)]
             if level > 0:
-                low_feat = self.spatial_conv_low(x[level - 1], offset, mask)
-                sum_feat = sum_feat + \
-                    low_feat * self.scale_attn_module(low_feat)
-                summed_levels += 1
+                temp_fea.append(self.DyConv[2](x[feature_names[level - 1]], **conv_args))
             if level < len(x) - 1:
-                high_feat = F.interpolate(
-                    self.spatial_conv_high(x[level + 1], offset, mask),
-                    size=x[level].shape[-2:],
-                    mode='bilinear',
-                    align_corners=True)
-                sum_feat = sum_feat + high_feat * \
-                    self.scale_attn_module(high_feat)
-                summed_levels += 1
-            outs.append(self.task_attn_module(sum_feat / summed_levels))
-
-        return outs
-
-
-
-class DyHead(nn.Module):
-    """DyHead neck consisting of multiple DyHead Blocks.
-    See `Dynamic Head: Unifying Object Detection Heads with Attentions
-    <https://arxiv.org/abs/2106.08322>`_ for details.
-    Args:
-        in_channels (int): Number of input channels.
-        out_channels (int): Number of output channels.
-        num_blocks (int, optional): Number of DyHead Blocks. Default: 6.
-        zero_init_offset (bool, optional): Whether to use zero init for
-            `spatial_conv_offset`. Default: True.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None.
-    """
-
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 num_blocks=6,
-                 zero_init_offset=True):
-
+                input = x[feature_names[level + 1]]
+                temp_fea.append(F.interpolate(self.DyConv[0](input, **conv_args),
+                                                    size=[feature.size(2), feature.size(3)]))
+            attn_fea = []
+            res_fea = []
+            for fea in temp_fea:
+                res_fea.append(fea)
+                attn_fea.append(self.AttnConv(fea))
+ 
+            res_fea = torch.stack(res_fea)
+            spa_pyr_attn = self.h_sigmoid(torch.stack(attn_fea))
+            mean_fea = torch.mean(res_fea * spa_pyr_attn, dim=0, keepdim=False)
+            next_x[name] = self.relu(mean_fea)
+ 
+        return next_x
+ 
+ 
+def autopad(k, p=None, d=1):  # kernel, padding, dilation
+    """Pad to 'same' shape outputs."""
+    if d > 1:
+        k = d * (k - 1) + 1 if isinstance(k, int) else [d * (x - 1) + 1 for x in k]  # actual kernel-size
+    if p is None:
+        p = k // 2 if isinstance(k, int) else [x // 2 for x in k]  # auto-pad
+    return p
+ 
+ 
+class Conv(nn.Module):
+    """Standard convolution with args(ch_in, ch_out, kernel, stride, padding, groups, dilation, activation)."""
+    default_act = nn.SiLU()  # default activation
+ 
+    def __init__(self, c1, c2, k=1, s=1, p=None, g=1, d=1, act=True):
+        """Initialize Conv layer with given arguments including activation."""
         super().__init__()
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.num_blocks = num_blocks
-        self.zero_init_offset = zero_init_offset
-
-        dyhead_blocks = []
-        for i in range(num_blocks):
-            in_channels = self.in_channels if i == 0 else self.out_channels
-            dyhead_blocks.append(
-                DyHeadBlock(
-                    in_channels,
-                    self.out_channels,
-                    zero_init_offset=zero_init_offset))
-        self.dyhead_blocks = nn.Sequential(*dyhead_blocks)
-
-    def forward(self, inputs):
-
-        """Forward function."""
-        assert isinstance(inputs, (tuple, list))
-        outs = self.dyhead_blocks(inputs)
-        return outs
+        self.conv = nn.Conv2d(c1, c2, k, s, autopad(k, p, d), groups=g, dilation=d, bias=False)
+        self.bn = nn.BatchNorm2d(c2)
+        self.act = self.default_act if act is True else act if isinstance(act, nn.Module) else nn.Identity()
+ 
+    def forward(self, x):
+        """Apply convolution, batch normalization and activation to input tensor."""
+        return self.act(self.bn(self.conv(x)))
+ 
+    def forward_fuse(self, x):
+        """Perform transposed convolution of 2D data."""
+        return self.act(self.conv(x))
+ 
+ 
+class Detect_dyhead(nn.Module):
+    """YOLOv8 Detect head for detection models."""
+    dynamic = False  # force grid reconstruction
+    export = False  # export mode
+    shape = None
+    anchors = torch.empty(0)  # init
+    strides = torch.empty(0)  # init
+ 
+    def __init__(self, nc=80, ch=()):
+        """Initializes the YOLOv8 detection layer with specified number of classes and channels."""
+        super().__init__()
+        self.nc = nc  # number of classes
+        self.nl = len(ch)  # number of detection layers
+        self.reg_max = 16  # DFL channels (ch[0] // 16 to scale 4/8/12/16/20 for n/s/m/l/x)
+        self.no = nc + self.reg_max * 4  # number of outputs per anchor
+        self.stride = torch.zeros(self.nl)  # strides computed during build
+        c2, c3 = max((16, ch[0] // 4, self.reg_max * 4)), max(ch[0], min(self.nc, 100))  # channels
+        self.cv2 = nn.ModuleList(
+            nn.Sequential(Conv(x, c2, 3), Conv(c2, c2, 3), nn.Conv2d(c2, 4 * self.reg_max, 1)) for x in ch)
+        self.cv3 = nn.ModuleList(nn.Sequential(Conv(x, c3, 3), Conv(c3, c3, 3), nn.Conv2d(c3, self.nc, 1)) for x in ch)
+        self.dfl = DFL(self.reg_max) if self.reg_max > 1 else nn.Identity()
+        dyhead_tower = []
+        for i in range(self.nl):
+            channel = ch[i]
+            dyhead_tower.append(
+                DyConv(
+                    channel,
+                    channel,
+                    conv_func=Conv3x3Norm,
+                )
+            )
+        self.add_module('dyhead_tower', nn.Sequential(*dyhead_tower))
+ 
+    def forward(self, x):
+        tensor_dict = {i: tensor for i, tensor in enumerate(x)}
+        x = self.dyhead_tower(tensor_dict)
+        x = list(x.values())
+        """Concatenates and returns predicted bounding boxes and class probabilities."""
+        shape = x[0].shape  # BCHW
+        for i in range(self.nl):
+            x[i] = torch.cat((self.cv2[i](x[i]), self.cv3[i](x[i])), 1)
+        if self.training:
+            return x
+        elif self.dynamic or self.shape != shape:
+            self.anchors, self.strides = (x.transpose(0, 1) for x in make_anchors(x, self.stride, 0.5))
+            self.shape = shape
+ 
+        x_cat = torch.cat([xi.view(shape[0], self.no, -1) for xi in x], 2)
+        if self.export and self.format in ('saved_model', 'pb', 'tflite', 'edgetpu', 'tfjs'):  # avoid TF FlexSplitV ops
+            box = x_cat[:, :self.reg_max * 4]
+            cls = x_cat[:, self.reg_max * 4:]
+        else:
+            box, cls = x_cat.split((self.reg_max * 4, self.nc), 1)
+        dbox = dist2bbox(self.dfl(box), self.anchors.unsqueeze(0), xywh=True, dim=1) * self.strides
+ 
+        if self.export and self.format in ('tflite', 'edgetpu'):
+            # Normalize xywh with image size to mitigate quantization error of TFLite integer models as done in YOLOv5:
+            # https://github.com/ultralytics/yolov5/blob/0c8de3fca4a702f8ff5c435e67f378d1fce70243/models/tf.py#L307-L309
+            # See this PR for details: https://github.com/ultralytics/ultralytics/pull/1695
+            img_h = shape[2] * self.stride[0]
+            img_w = shape[3] * self.stride[0]
+            img_size = torch.tensor([img_w, img_h, img_w, img_h], device=dbox.device).reshape(1, 4, 1)
+            dbox /= img_size
+ 
+        y = torch.cat((dbox, cls.sigmoid()), 1)
+        return y if self.export else (y, x)
+ 
+    def bias_init(self):
+        """Initialize Detect() biases, WARNING: requires stride availability."""
+        m = self  # self.model[-1]  # Detect() module
+        # cf = torch.bincount(torch.tensor(np.concatenate(dataset.labels, 0)[:, 0]).long(), minlength=nc) + 1
+        # ncf = math.log(0.6 / (m.nc - 0.999999)) if cf is None else torch.log(cf / cf.sum())  # nominal class frequency
+        for a, b, s in zip(m.cv2, m.cv3, m.stride):  # from
+            a[-1].bias.data[:] = 1.0  # box
+            b[-1].bias.data[:m.nc] = math.log(5 / m.nc / (640 / s) ** 2)  # cls (.01 objects, 80 classes, 640 img)
+ 
